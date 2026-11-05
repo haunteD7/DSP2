@@ -8,11 +8,13 @@ const OMEGA = vcat(
     collect(range(-pi, -OMEGA_MIN, length=1000)),
     collect(range(OMEGA_MIN, pi, length=1000)),
 )
-const INPUT_SIGNALS = [
-    ("x₁(t) = sin(2π · 0.1t)", 0.1, 100.0),
-    ("x₂(t) = cos(2π · 1t)", 1.0, 100.0),
-    ("x₃(t) = exp(i(2π · 10t))", 10.0, 10000.0),
-]
+const INPUT_FREQUENCY = 2.0
+const INPUT_PHASE = pi / 6
+const INPUT_SIGNALS = (
+    "x₁(t) = sin(2πft + φ)",
+    "x₂(t) = cos(2πft + φ)",
+    "x₃(t) = exp(i(2πft + φ))",
+)
 
 function h1(omega)
     z = exp.(im .* omega)
@@ -109,10 +111,12 @@ function plot_system(system)
 end
 
 function print_output_characteristics()
-    for (signal_title, input_frequency, sample_rate) in INPUT_SIGNALS
-        omega = 2pi * input_frequency / sample_rate
+    println("Входные сигналы: f = $INPUT_FREQUENCY Гц, φ = π/6")
+
+    for sample_rate in SAMPLE_RATES
+        omega = 2pi * INPUT_FREQUENCY / sample_rate
         println()
-        println("$signal_title, fₛ = $sample_rate Гц, ω = $omega рад/отсчёт")
+        println("fₛ = $sample_rate Гц, ω = $omega рад/отсчёт")
 
         for (title, transfer_function, stable, filename) in systems
             if !stable
@@ -121,8 +125,10 @@ function print_output_characteristics()
 
             transfer = transfer_function([omega])[1]
             output_amplitude = abs(transfer)
-            output_phase = angle(transfer)
-            println("$title: A = $output_amplitude, Φ = $output_phase рад")
+            for signal_title in INPUT_SIGNALS
+                output_phase = INPUT_PHASE + angle(transfer)
+                println("$title, $signal_title: A = $output_amplitude, Φ = $output_phase рад")
+            end
         end
     end
 end

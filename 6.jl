@@ -8,13 +8,6 @@ const OMEGA = vcat(
     collect(range(-pi, -OMEGA_MIN, length=1000)),
     collect(range(OMEGA_MIN, pi, length=1000)),
 )
-const INPUT_FREQUENCY = 2.0
-const INPUT_PHASE = pi / 6
-const INPUT_SIGNALS = (
-    "x₁(t) = sin(2πft + φ)",
-    "x₂(t) = cos(2πft + φ)",
-    "x₃(t) = exp(i(2πft + φ))",
-)
 
 function h1(omega)
     z = exp.(im .* omega)
@@ -110,29 +103,6 @@ function plot_system(system)
     save("$(filename)_discrete_fchx.png", phase_figure)
 end
 
-function print_output_characteristics()
-    println("Входные сигналы: f = $INPUT_FREQUENCY Гц, φ = π/6")
-
-    for sample_rate in SAMPLE_RATES
-        omega = 2pi * INPUT_FREQUENCY / sample_rate
-        println()
-        println("fₛ = $sample_rate Гц, ω = $omega рад/отсчёт")
-
-        for (title, transfer_function, stable, filename) in systems
-            if !stable
-                continue
-            end
-
-            transfer = transfer_function([omega])[1]
-            output_amplitude = abs(transfer)
-            for signal_title in INPUT_SIGNALS
-                output_phase = INPUT_PHASE + angle(transfer)
-                println("$title, $signal_title: A = $output_amplitude, Φ = $output_phase рад")
-            end
-        end
-    end
-end
-
 systems = [
     ("H₁", h1, true, "h1"),
     ("H₂", h2, false, "h2"),
@@ -141,6 +111,33 @@ systems = [
     ("H₆", h6, true, "h6"),
     ("H₇", h7, true, "h7"),
 ]
+
+input_signals = [
+    ("x₁(t) = sin(2π · 0.1t)", 0.1, 100.0),
+    ("x₂(t) = sin(2π · 1t)", 1.0, 100.0),
+    ("x₃(t) = sin(2π · 10t)", 10.0, 10000.0),
+]
+
+function print_output_characteristics()
+    println("Амплитуда и фаза выходных сигналов устойчивых систем:")
+
+    for (signal_title, frequency, sample_rate) in input_signals
+        omega = 2pi * frequency / sample_rate
+        println()
+        rounded_omega = round(omega, sigdigits=6)
+        println("$signal_title, f = $frequency Гц, fₛ = $sample_rate Гц, ω = $rounded_omega рад/отсчет")
+        for (title, transfer_function, stable, _) in systems
+            if stable
+                transfer = transfer_function([omega])[1]
+                output_amplitude = abs(transfer)
+                output_phase = angle(transfer)
+                rounded_amplitude = round(output_amplitude, sigdigits=6)
+                rounded_phase = round(output_phase, sigdigits=6)
+                println("$title: A = $rounded_amplitude, Φ = $rounded_phase рад")
+            end
+        end
+    end
+end
 
 for system in systems
     plot_system(system)
